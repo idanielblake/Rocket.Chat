@@ -44,6 +44,8 @@ Importer.CSV = class ImporterCSV extends Importer.Base {
 						name: c[0].trim(),
 						creator: c[1].trim(),
 						isPrivate: c[2].trim().toLowerCase() === 'private' ? true : false,
+						isDirect: c[2].trim().toLowerCase() === 'direct' ? true : false,
+						directreceiver: c[3].trim(),
 						members: c[3].trim().split(';').map((m) => m.trim())
 					};
 				});
@@ -221,8 +223,14 @@ Importer.CSV = class ImporterCSV extends Importer.Base {
 
 						//Create the channel
 						Meteor.runAsUser(creatorId, () => {
+							if ( c.isDirect ) {
+								const roomInfo = Meteor.call('createDirectMessage', c.directreceiver);
+								c.rocketId = roomInfo.rid;
+							}
+							else {
 							const roomInfo = Meteor.call(c.isPrivate ? 'createPrivateGroup' : 'createChannel', c.name, c.members);
 							c.rocketId = roomInfo.rid;
+							}
 						});
 
 						RocketChat.models.Rooms.update({ _id: c.rocketId }, { $addToSet: { importIds: c.id } });
